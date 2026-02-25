@@ -723,6 +723,51 @@ public class NuGetTests
     }
 
     [Test]
+    public void MenuRootConfigRoundtripTest()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{NugetConfigFile.FileName}");
+
+        try
+        {
+            var file = NugetConfigFile.CreateDefaultFile(path);
+            Assert.That(file.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
+
+            file.MenuRoot = "Window//Package Management\\NuGet/";
+            file.Save(path);
+
+            var loaded = NugetConfigFile.Load(path);
+            Assert.That(loaded.MenuRoot, Is.EqualTo("Window/Package Management/NuGet"));
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    [Test]
+    public void MenuRootFallsBackToDefaultWhenEmptyTest()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{NugetConfigFile.FileName}");
+
+        try
+        {
+            var file = NugetConfigFile.CreateDefaultFile(path);
+            file.MenuRoot = "  ///  ";
+            Assert.That(file.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    [Test]
     [TestCase("2018.4.30f1", false, false, false)]
     [TestCase("2018.4.30f1", true, false, false)]
     [TestCase("2021.3.16f1", false, true, true)]

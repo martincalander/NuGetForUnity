@@ -121,12 +121,25 @@ namespace NugetForUnity.Ui
                              new GUIStyle(GUI.skin.toggle) { onNormal = { textColor = Color.red }, onHover = { textColor = Color.red } };
 
             var preferencesChangedThisFrame = false;
+            var menuRootChangedThisFrame = false;
             var sourcePathChangedThisFrame = false;
             var needsAssetRefresh = false;
 
             var biggestLabelSize = EditorStyles.label.CalcSize(new GUIContent("Prefer .NET Standard dependencies over .NET Framework")).x;
             EditorGUIUtility.labelWidth = biggestLabelSize;
             EditorGUILayout.LabelField($"Version: {NuGetForUnityVersion}");
+
+            var menuRoot = EditorGUILayout.TextField(
+                new GUIContent(
+                    "Menu Root Path",
+                    "Root menu path for NuGet menu items. Examples: 'NuGet', 'Tools/NuGet', 'Window/Package Management/NuGet'."),
+                ConfigurationManager.NugetConfigFile.MenuRoot);
+            if (menuRoot != ConfigurationManager.NugetConfigFile.MenuRoot)
+            {
+                preferencesChangedThisFrame = true;
+                menuRootChangedThisFrame = true;
+                ConfigurationManager.NugetConfigFile.MenuRoot = menuRoot;
+            }
 
             var installFromCache = EditorGUILayout.Toggle("Install From the Cache", ConfigurationManager.NugetConfigFile.InstallFromCache);
             if (installFromCache != ConfigurationManager.NugetConfigFile.InstallFromCache)
@@ -607,6 +620,7 @@ namespace NugetForUnity.Ui
                 NugetConfigFile.CreateDefaultFile(ConfigurationManager.NugetConfigFilePath);
                 ConfigurationManager.LoadNugetConfigFile();
                 preferencesChangedThisFrame = true;
+                menuRootChangedThisFrame = true;
             }
 
             if (!preferencesChangedThisFrame)
@@ -621,6 +635,11 @@ namespace NugetForUnity.Ui
                 // we need to force reload as the changed 'url' can lead to a package source type change.
                 // e.g. the 'url' can be changed to a V3 nuget API url so we need to create a V3 package source.
                 ConfigurationManager.LoadNugetConfigFile();
+            }
+
+            if (menuRootChangedThisFrame)
+            {
+                NugetMenu.Refresh();
             }
 
             if (needsAssetRefresh)
