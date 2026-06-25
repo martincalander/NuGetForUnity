@@ -49,8 +49,7 @@ namespace NugetForUnity.Ui
         /// <summary>
         ///     Opens the NuGet Package Manager Window.
         /// </summary>
-        [MenuItem("Window/Package Management/NuGet/Show Dependency Tree", false, 5)]
-        protected static void DisplayDependencyTree()
+        internal static void DisplayDependencyTree()
         {
             GetWindow<DependencyTreeViewer>();
         }

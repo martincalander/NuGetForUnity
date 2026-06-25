@@ -44,7 +44,24 @@ namespace NugetForUnity.Ui
 
         private const float LabelPading = 5;
 
-        private static readonly string[] SearchKeywords = { "NuGet", "Packages" };
+        private static readonly string[] SearchKeywords = { "NuGet", "Packages", "Menu" };
+
+        private static readonly string[] MenuRootPresetPaths =
+        {
+            NugetConfigFile.DefaultMenuRoot,
+            "Tools/NuGet",
+            "Window/Package Management/NuGet",
+        };
+
+        private static readonly GUIContent[] MenuRootPresetLabels =
+        {
+            new GUIContent("NuGet"),
+            new GUIContent("Tools/NuGet"),
+            new GUIContent("Window/Package Management/NuGet"),
+            new GUIContent("Custom"),
+        };
+
+        private const int CustomMenuRootPresetIndex = 3;
 
         private readonly GUIContent deleteX = new GUIContent("\u2716");
 
@@ -59,6 +76,8 @@ namespace NugetForUnity.Ui
         private float? biggestAdvancedSettingsPackageSourceSectionLabelSize;
 
         private float? biggestPackageSourceSectionLabelSize;
+
+        private bool customMenuRootSelected;
 
         /// <summary>
         ///     The current position of the scroll bar in the GUI for the list of plugins.
@@ -121,12 +140,59 @@ namespace NugetForUnity.Ui
                              new GUIStyle(GUI.skin.toggle) { onNormal = { textColor = Color.red }, onHover = { textColor = Color.red } };
 
             var preferencesChangedThisFrame = false;
+            var menuRootChangedThisFrame = false;
             var sourcePathChangedThisFrame = false;
             var needsAssetRefresh = false;
 
             var biggestLabelSize = EditorStyles.label.CalcSize(new GUIContent("Prefer .NET Standard dependencies over .NET Framework")).x;
             EditorGUIUtility.labelWidth = biggestLabelSize;
             EditorGUILayout.LabelField($"Version: {NuGetForUnityVersion}");
+
+            var menuRoot = ConfigurationManager.NugetConfigFile.MenuRoot;
+            var currentMenuRootPresetIndex = GetMenuRootPresetIndex(menuRoot);
+            if (currentMenuRootPresetIndex == CustomMenuRootPresetIndex)
+            {
+                customMenuRootSelected = true;
+            }
+
+            var displayedMenuRootPresetIndex = customMenuRootSelected ? CustomMenuRootPresetIndex : currentMenuRootPresetIndex;
+            var selectedMenuRootPresetIndex = EditorGUILayout.Popup(
+                new GUIContent(
+                    "NuGet Menu Location",
+                    "Root menu path for NuGet menu items."),
+                displayedMenuRootPresetIndex,
+                MenuRootPresetLabels);
+
+            if (selectedMenuRootPresetIndex != displayedMenuRootPresetIndex)
+            {
+                customMenuRootSelected = selectedMenuRootPresetIndex == CustomMenuRootPresetIndex;
+                if (!customMenuRootSelected &&
+                    selectedMenuRootPresetIndex >= 0 &&
+                    selectedMenuRootPresetIndex < MenuRootPresetPaths.Length &&
+                    MenuRootPresetPaths[selectedMenuRootPresetIndex] != ConfigurationManager.NugetConfigFile.MenuRoot)
+                {
+                    preferencesChangedThisFrame = true;
+                    menuRootChangedThisFrame = true;
+                    ConfigurationManager.NugetConfigFile.MenuRoot = MenuRootPresetPaths[selectedMenuRootPresetIndex];
+                }
+            }
+
+            if (customMenuRootSelected)
+            {
+                var customMenuRoot = EditorGUILayout.DelayedTextField(
+                    new GUIContent(
+                        "Custom Menu Path",
+                        "Examples: 'NuGet', 'Tools/NuGet', 'Window/Package Management/NuGet'."),
+                    menuRoot);
+                customMenuRoot = NugetConfigFile.NormalizeMenuRoot(customMenuRoot);
+                if (customMenuRoot != ConfigurationManager.NugetConfigFile.MenuRoot)
+                {
+                    preferencesChangedThisFrame = true;
+                    menuRootChangedThisFrame = true;
+                    ConfigurationManager.NugetConfigFile.MenuRoot = customMenuRoot;
+                    customMenuRootSelected = GetMenuRootPresetIndex(customMenuRoot) == CustomMenuRootPresetIndex;
+                }
+            }
 
             var installFromCache = EditorGUILayout.Toggle("Install From the Cache", ConfigurationManager.NugetConfigFile.InstallFromCache);
             if (installFromCache != ConfigurationManager.NugetConfigFile.InstallFromCache)
@@ -607,6 +673,7 @@ namespace NugetForUnity.Ui
                 NugetConfigFile.CreateDefaultFile(ConfigurationManager.NugetConfigFilePath);
                 ConfigurationManager.LoadNugetConfigFile();
                 preferencesChangedThisFrame = true;
+                menuRootChangedThisFrame = true;
             }
 
             if (!preferencesChangedThisFrame)
@@ -623,11 +690,29 @@ namespace NugetForUnity.Ui
                 ConfigurationManager.LoadNugetConfigFile();
             }
 
+            if (menuRootChangedThisFrame)
+            {
+                NugetMenu.Refresh();
+            }
+
             if (needsAssetRefresh)
             {
                 // AssetDatabase.Refresh(); doesn't work when we move the files from Assets to Packages so we use this instead:
                 EditorApplication.ExecuteMenuItem("Assets/Refresh");
             }
+        }
+
+        private static int GetMenuRootPresetIndex([NotNull] string menuRoot)
+        {
+            for (var i = 0; i < MenuRootPresetPaths.Length; i++)
+            {
+                if (string.Equals(menuRoot, MenuRootPresetPaths[i], StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+
+            return CustomMenuRootPresetIndex;
         }
 
         private sealed class NugetPlugin
