@@ -61,8 +61,6 @@ namespace NugetForUnity.Configuration
 
         private const string KeepingPdbFilesConfigKey = "KeepingPdbFiles";
 
-        private const string MenuRootConfigKey = "MenuRoot";
-
         private const string ProtocolVersionAttributeName = "protocolVersion";
 
         private const string EnableCredentialProviderAttributeName = "enableCredentialProvider";
@@ -84,9 +82,6 @@ namespace NugetForUnity.Configuration
 
         [NotNull]
         private string repositoryPath = Path.GetFullPath(Path.Combine(Application.dataPath, "Packages"));
-
-        [NotNull]
-        private string menuRoot = DefaultMenuRoot;
 
         /// <summary>
         ///     Gets the list of package sources that are defined in the NuGet.config file.
@@ -211,16 +206,6 @@ namespace NugetForUnity.Configuration
         ///     Gets or sets a value indicating whether PDB files included in NuGet packages should not be deleted if they can be read by Unity.
         /// </summary>
         internal bool KeepingPdbFiles { get; set; }
-
-        /// <summary>
-        ///     Gets or sets the root menu path used for NuGet menu items.
-        /// </summary>
-        [NotNull]
-        public string MenuRoot
-        {
-            get => menuRoot;
-            set => menuRoot = NormalizeMenuRoot(value);
-        }
 
         /// <summary>
         ///     Gets the value that tells the system how to determine where the packages are to be installed and configurations are to be stored.
@@ -401,10 +386,6 @@ namespace NugetForUnity.Configuration
                 else if (string.Equals(key, KeepingPdbFilesConfigKey, StringComparison.OrdinalIgnoreCase))
                 {
                     configFile.KeepingPdbFiles = bool.Parse(value);
-                }
-                else if (string.Equals(key, MenuRootConfigKey, StringComparison.OrdinalIgnoreCase))
-                {
-                    configFile.MenuRoot = value;
                 }
             }
 
@@ -611,14 +592,6 @@ namespace NugetForUnity.Configuration
                 config.Add(addElement);
             }
 
-            if (!string.Equals(MenuRoot, DefaultMenuRoot, StringComparison.Ordinal))
-            {
-                addElement = new XElement("add");
-                addElement.Add(new XAttribute("key", MenuRootConfigKey));
-                addElement.Add(new XAttribute("value", MenuRoot));
-                config.Add(addElement);
-            }
-
             var configuration = new XElement("configuration");
             configuration.Add(packageSources);
             configuration.Add(disabledPackageSources);
@@ -703,29 +676,6 @@ namespace NugetForUnity.Configuration
             {
                 Debug.LogError($"Error while loading file: '{filePath}'. Error: {exception}");
             }
-        }
-
-        /// <summary>
-        ///     Normalizes a user configured menu root path.
-        /// </summary>
-        /// <param name="menuRootPath">Configured menu root path.</param>
-        /// <returns>Normalized menu root path.</returns>
-        [NotNull]
-        public static string NormalizeMenuRoot([CanBeNull] string menuRootPath)
-        {
-            if (string.IsNullOrWhiteSpace(menuRootPath))
-            {
-                return DefaultMenuRoot;
-            }
-
-            var normalized = menuRootPath.Trim().Replace('\\', '/');
-            while (normalized.Contains("//"))
-            {
-                normalized = normalized.Replace("//", "/");
-            }
-
-            normalized = normalized.Trim('/');
-            return string.IsNullOrWhiteSpace(normalized) ? DefaultMenuRoot : normalized;
         }
 
         private void FillPackageSourceCredentialsFromConfig(XDocument file, bool overwriteMissingFromExternal)

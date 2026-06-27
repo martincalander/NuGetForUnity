@@ -723,20 +723,35 @@ public class NuGetTests
     }
 
     [Test]
-    public void MenuRootConfigRoundtripTest()
+    public void MenuRootMatchesScriptDefineSymbolsTest()
+    {
+#if NUGETFORUNITY_MENU_TOOLS
+        Assert.That(NugetMenu.MenuRoot, Is.EqualTo("Tools/NuGet"));
+#elif NUGETFORUNITY_MENU_WINDOW_PACKAGE_MANAGER
+        Assert.That(NugetMenu.MenuRoot, Is.EqualTo("Window/Package Manager/NuGet"));
+#else
+        Assert.That(NugetMenu.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
+#endif
+    }
+
+    [Test]
+    public void MenuRootConfigIsNotSavedTest()
     {
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{NugetConfigFile.FileName}");
 
         try
         {
-            var file = NugetConfigFile.CreateDefaultFile(path);
-            Assert.That(file.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
+            NugetConfigFile.CreateDefaultFile(path);
+            File.WriteAllText(
+                path,
+                File.ReadAllText(path).Replace(
+                    "  </config>",
+                    "    <add key=\"MenuRoot\" value=\"Tools/NuGet\" />\n  </config>"));
 
-            file.MenuRoot = "Tools//Package Management\\NuGet/";
+            var file = NugetConfigFile.Load(path);
             file.Save(path);
 
-            var loaded = NugetConfigFile.Load(path);
-            Assert.That(loaded.MenuRoot, Is.EqualTo("Tools/Package Management/NuGet"));
+            Assert.That(File.ReadAllText(path), Does.Not.Contain("MenuRoot"));
         }
         finally
         {
@@ -745,17 +760,6 @@ public class NuGetTests
                 File.Delete(path);
             }
         }
-    }
-
-    [Test]
-    public void MenuRootFallsBackToDefaultWhenEmptyTest()
-    {
-        var file = new NugetConfigFile
-        {
-            MenuRoot = "  ///  ",
-        };
-
-        Assert.That(file.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
     }
 
     [Test]
