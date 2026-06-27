@@ -15,7 +15,7 @@ namespace NugetForUnity.Ui
 #if NUGETFORUNITY_MENU_TOOLS
         internal const string MenuRoot = "Tools/NuGet";
 #elif NUGETFORUNITY_MENU_WINDOW_PACKAGE_MANAGER
-        internal const string MenuRoot = "Window/Package Manager/NuGet";
+        internal const string MenuRoot = "Window/Package Management/NuGet";
 #else
         internal const string MenuRoot = NugetConfigFile.DefaultMenuRoot;
 #endif

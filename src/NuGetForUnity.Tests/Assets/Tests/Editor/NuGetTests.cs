@@ -728,7 +728,7 @@ public class NuGetTests
 #if NUGETFORUNITY_MENU_TOOLS
         Assert.That(NugetMenu.MenuRoot, Is.EqualTo("Tools/NuGet"));
 #elif NUGETFORUNITY_MENU_WINDOW_PACKAGE_MANAGER
-        Assert.That(NugetMenu.MenuRoot, Is.EqualTo("Window/Package Manager/NuGet"));
+        Assert.That(NugetMenu.MenuRoot, Is.EqualTo("Window/Package Management/NuGet"));
 #else
         Assert.That(NugetMenu.MenuRoot, Is.EqualTo(NugetConfigFile.DefaultMenuRoot));
 #endif
